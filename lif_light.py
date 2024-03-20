@@ -243,4 +243,56 @@ def eval_lif_light(lsnn, inputs, w_rec, w_in, w_out, key, n_rec, dt, tau_v, T, b
     y_out = jnp.expand_dims(y_out, axis=0)
     y_target = jnp.expand_dims(y_target, axis=0)
     return loss, y_out, y_target, w_out, spikes, V, variations
+
+
+
+def eval_full(lsnn, inputs, w_rec, w_in, w_out, key, n_rec, dt, tau_v, T, batch_size=1):    
+    lsnn_hk = hk.without_apply_rng(hk.transform(lsnn))
+    i0 = jnp.stack([inputs[:,0], inputs[:,0]], axis=0)
+    params = lsnn_hk.init(rng=key, x=i0, batch_size=2)
+    state = None
+    spikes = []
+    V = []
+    variations = []
+    if w_rec is not None:
+        params['RecurrentLIFLight']['w_rec'] = w_rec
+    if w_in is not None:
+        params['linear']['w'] = w_in
+    if w_out is not None:
+        params['LeakyLinear']['weights'] = w_out
+        # w_out = jax.random.normal(key=key, shape=[n_rec, 1]) # one output neuron
+    # if w_in is not None:
+    #     params['RecurrentLIF']['w_in'] = w_in
+    for t in range(T):
+        it = inputs[:, t]
+        it = jnp.expand_dims(it, axis=0)
+        outs, state = lsnn_hk.apply(params, it, state, batch_size)
+        # print(state[0].s.shape)
+        print(inputs[:,t], "->", outs)
+        spikes.append(outs)
+        # V.append(state[0].s[...,0])
+        # variations.append(state[0].s[...,1])
+        # print(V[-1].shape)
+
+    y_out = jnp.stack([s[0] for s in spikes], axis=0)
+    print("yo", y_out.shape)
+    # spikes = jnp.expand_dims(spikes, axis=0)
+    # # spikes = jnp.stack(spikes, axis=0)
+    # V = jnp.stack(V, axis=1)
+    # variations = jnp.stack(variations, axis=1)
+    # print(spikes.shape)
+    # # w_out = jax.random.normal(key=key, shape=[n_rec, 1])
+    # decay_out = jnp.exp(-dt / tau_v)
+    # print(decay_out)
+    # print(spikes.shape)
+    # z_filtered = exp_convolve(spikes, decay_out)
+    # print("zf", z_filtered)
+    # z_filtered = spikes
+    # y_out = jnp.einsum("btj,jk->tk", z_filtered, w_out) # no batch dim
+    y_target = jax.random.normal(key=key, shape=[T, 1])
+    print(y_out.shape, y_target.shape)
+    loss = 0.5 * jnp.sum((y_out - y_target) ** 2)
+    y_out = jnp.expand_dims(y_out, axis=0)
+    y_target = jnp.expand_dims(y_target, axis=0)
+    return loss, y_out, y_target
     

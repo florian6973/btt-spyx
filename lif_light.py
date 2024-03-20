@@ -168,6 +168,34 @@ class RecurrentLIFLight(hk.RNNCore):
         new_state = CustomALIFStateTuple(s=new_s, z=new_z, r=new_r, z_local=new_z_local)
         return new_z, new_state
     
+class LeakyLinear(hk.RNNCore):
+    def __init__(self, n_in, n_out, kappa, dtype=jnp.float32, name="LeakyLinear"):
+        super().__init__(name=name)
+        self.n_in = n_in
+        self.n_out = n_out
+        self.kappa = kappa
+
+        self.dtype = dtype
+
+        self.weights = hk.get_parameter("weights", shape=[n_in, n_out], dtype=dtype,
+                                        init=hk.initializers.TruncatedNormal(1./jnp.sqrt(n_in)))
+
+        self._num_units = self.n_out
+        self.built = True
+
+
+    def initial_state(self, batch_size, dtype=jnp.float32):
+        s0 = jnp.zeros(shape=(batch_size, self.n_out), dtype=dtype)
+        return s0
+
+    def __call__(self, inputs, state, scope=None, dtype=jnp.float32):
+        if len(self.weights.shape) == 3:
+            outputs = jnp.einsum('bi,bij->bj', inputs, self.weights)
+        else:
+            outputs = jnp.matmul(inputs, self.weights)
+        new_s = self.kappa * state  + (1 - self.kappa) * outputs
+        return new_s, new_s
+    
 
 def eval_lif_light(lsnn, inputs, w_rec, w_in, w_out, key, n_rec, dt, tau_v, T, batch_size=1):    
     lsnn_hk = hk.without_apply_rng(hk.transform(lsnn))
@@ -182,7 +210,7 @@ def eval_lif_light(lsnn, inputs, w_rec, w_in, w_out, key, n_rec, dt, tau_v, T, b
     if w_in is not None:
         params['linear']['w'] = w_in
     if w_out is None:
-        w_out = jax.random.normal(key=key, shape=[n_rec, 1])
+        w_out = jax.random.normal(key=key, shape=[n_rec, 1]) # one output neuron
     # if w_in is not None:
     #     params['RecurrentLIF']['w_in'] = w_in
     for t in range(T):

@@ -134,7 +134,7 @@ class RecurrentLIF(hk.RNNCore):
             # i_in = jnp.matmul(inputs, self.w_in_val)
             i_in = jnp.einsum('abc,cd->ad', inputs, self.w_in_val)
             # print(inputs.shape, self.w_in_val.shape)
-            # print("i_in", i_in.shape)
+        print("i_in", i_in.shape)
 
         if self.rec:
             if len(self.w_rec_val.shape) == 3:

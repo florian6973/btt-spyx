@@ -28,3 +28,5 @@ Report: [here](./Report.pdf)
 > G Bellec*, F Scherr*, A Subramoney, E Hajek, Darjan Salaj, R Legenstein, W Maass
 
 I copied part of the original code in the `original_code` folder, to check the results with jax. To run it, install tensorflow 2 (I adapted the code for compatibility).
+
+Other implementations of e-prop can be find at https://github.com/YigitDemirag/eprop-jax (out of spyx framework, no autodiff) or https://github.com/ChFrenkel/eprop-PyTorch (pytorch).

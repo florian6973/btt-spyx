@@ -6,8 +6,26 @@ import jax.numpy as jnp
 
 import haiku as hk
 
-from utils import exp_convolve, shift_by_one_time_step, iterate
-from lif import SpikeFunction, CustomALIFStateTuple
+from collections import namedtuple
+
+
+CustomALIFStateTuple = namedtuple('CustomALIFStateTuple', ('s', 'z', 'r', 'z_local'))
+
+@jax.custom_gradient
+def SpikeFunction(v_scaled, dampening_factor):
+    z_ = jnp.greater(v_scaled, 0.)
+    z_ = z_.astype(jnp.float32)
+
+    def grad(dy):
+        dE_dz = dy
+        dz_dv_scaled = jnp.maximum(1 - jnp.abs(v_scaled), 0)
+        dz_dv_scaled *= dampening_factor
+
+        dE_dv_scaled = dE_dz * dz_dv_scaled
+
+        return (dE_dv_scaled, jnp.zeros_like(dampening_factor).astype(jnp.float32))
+
+    return z_, grad
 
 class RecurrentLIFLight(hk.RNNCore):
     """
@@ -29,6 +47,7 @@ class RecurrentLIFLight(hk.RNNCore):
         self.tau_adaptation = tau_adaptation
         self.beta = beta
         self.decay_b = jnp.exp(-dt / tau_adaptation)
+        print("decay b", self.decay_b)
 
         if jnp.isscalar(tau): tau = jnp.ones(n_rec, dtype=dtype) * jnp.mean(tau)
         if jnp.isscalar(thr): thr = jnp.ones(n_rec, dtype=dtype) * jnp.mean(thr)
@@ -102,6 +121,7 @@ class RecurrentLIFLight(hk.RNNCore):
 
         if self.stop_gradients:
             z = jax.lax.stop_gradient(z)
+            # stop gradient z_local?
 
         # if len(self.w_in_val.shape) == 3:
         #     i_in = jnp.einsum('bi,bij->bj', inputs, self.w_in_val)
@@ -198,6 +218,8 @@ class LeakyLinear(hk.RNNCore):
     
 
 def eval_lif_light(lsnn, inputs, w_rec, w_in, w_out, key, n_rec, dt, tau_v, T, batch_size=1):    
+    
+    from utils import exp_convolve
     lsnn_hk = hk.without_apply_rng(hk.transform(lsnn))
     i0 = jnp.stack([inputs[:,0], inputs[:,0]], axis=0)
     params = lsnn_hk.init(rng=key, x=i0, batch_size=2)

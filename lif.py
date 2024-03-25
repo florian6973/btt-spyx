@@ -12,6 +12,10 @@ from collections import namedtuple
 
 # https://colab.research.google.com/github/google/jax/blob/main/docs/jax-101/04-advanced-autodiff.ipynb
 
+# Original code from https://github.com/IGITUGraz/eligibility_propagation
+# Copyright 2019-2020, the e-prop team:
+# Guillaume Bellec, Franz Scherr, Anand Subramoney, Elias Hajek, Darjan Salaj, Robert Legenstein, Wolfgang Maass
+# from the Institute for theoretical computer science, TU Graz, Austria.
 
 CustomALIFStateTuple = namedtuple('CustomALIFStateTuple', ('s', 'z', 'r', 'z_local'))
 

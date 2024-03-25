@@ -23,7 +23,8 @@ Report: [here](./Report.pdf)
 - `utils.py`: some useful methods
 
 > Original paper code repo: https://github.com/IGITUGraz/eligibility_propagation
-> Full paper: A solution to the learning dilemma for recurrent networks of spiking neurons
-> Authors: G Bellec*, F Scherr*, A Subramoney, E Hajek, Darjan Salaj, R Legenstein, W Maass
+
+> Full paper: A solution to the learning dilemma for recurrent networks of spiking neurons.
+> G Bellec*, F Scherr*, A Subramoney, E Hajek, Darjan Salaj, R Legenstein, W Maass
 
 I copied part of the original code in the `original_code` folder, to check the results with jax. To run it, install tensorflow 2 (I adapted the code for compatibility).
